@@ -29,7 +29,7 @@ steps:
       - --allow-unauthenticated
       - --cpu=1
       - --memory=512Mi
-      - --set-env-vars=RUST_LOG=warn,LOG_LEVEL=WARN,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false
+      - --set-env-vars=FASTMCP_LOG_LEVEL=WARNING,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false
       - --set-secrets=TFC_TOKEN=TFC_TOKEN:latest
       - --args=--host=0.0.0.0,--port=8080,--log-level,WARNING,--no-debug,--pass-environment,--,terraform-cloud-mcp
       - --port=8080
