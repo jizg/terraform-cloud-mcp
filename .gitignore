@@ -180,3 +180,4 @@ cython_debug/
 examples/
 ISSUES.md
 TASKS.md
+tfc.env

@@ -19,12 +19,12 @@ services:
       - READ_ONLY_TOOLS=false
       - ENABLE_RAW_RESPONSE=false
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 10s
 
   # MCP Server in stdio mode (for testing)
   mcp-stdio:
@@ -64,3 +64,26 @@ services:
     restart: unless-stopped
     profiles:
       - readonly
+
+  # SSE gateway for Langflow 1.6.5 -> stdio MCP server
+  tfc-mcp-sse-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-gateway
+    container_name: terraform-cloud-mcp-sse-gateway
+    env_file:
+      - ./tfc.env
+    environment:
+      - FASTMCP_LOG_LEVEL=WARN
+    ports:
+      - "8090:8090"
+    command:
+      - "--host=0.0.0.0"
+      - "--port=8090"
+      - "--log-level"
+      - "WARNING"
+      - "--no-debug"
+      - "--pass-environment"
+      - "--"
+      - "terraform-cloud-mcp"
+    restart: unless-stopped

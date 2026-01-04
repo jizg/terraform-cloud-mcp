@@ -1,0 +1,15 @@
+FROM ghcr.io/sparfenyuk/mcp-proxy:latest
+
+# Install git so uv can fetch the repo (base image is Alpine)
+RUN apk add --no-cache git
+
+# mcp-proxy image does not bundle uv; install it to pull terraform-cloud-mcp
+RUN python3 -m ensurepip && pip install --no-cache-dir uv
+
+# Install terraform-cloud-mcp from GitHub
+RUN uv tool install git+https://github.com/jizg/terraform-cloud-mcp
+
+# Ensure the installed tool is on PATH
+ENV PATH="/root/.local/bin:${PATH}"
+
+ENTRYPOINT ["catatonit","--","mcp-proxy"]

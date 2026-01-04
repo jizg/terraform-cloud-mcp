@@ -13,6 +13,22 @@ steps:
     args:
       - 'push'
       - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp:$BUILD_ID'
+
+  # Build the MCP proxy image (for Langflow 1.6.5 compatibility)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.proxy'
+      - '-t'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-proxy:$BUILD_ID'
+      - '.'
+
+  # Push the proxy image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-proxy:$BUILD_ID'
   
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -33,8 +49,30 @@ steps:
       - '--set-secrets'
       - 'TFC_TOKEN=TFC_TOKEN:latest'
 
+  # Deploy the proxy service after retrieving the main service URL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        SERVICE_URL=$$(gcloud run services describe terraform-cloud-mcp --region asia-east1 --format='value(status.url)')
+        if [ -z "$$SERVICE_URL" ]; then
+          echo "Failed to resolve terraform-cloud-mcp service URL" >&2
+          exit 1
+        fi
+        gcloud run deploy terraform-cloud-mcp-proxy \
+          --image asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-proxy:$BUILD_ID \
+          --region asia-east1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --set-env-vars UPSTREAM_URL=$$SERVICE_URL,UPSTREAM_TRANSPORT=sse \
+          --memory 256Mi \
+          --cpu 1
+
 images:
   - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp:$BUILD_ID'
+  - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-proxy:$BUILD_ID'
 
 options:
   logging: CLOUD_LOGGING_ONLY

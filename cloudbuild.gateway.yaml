@@ -1,0 +1,41 @@
+# Build and deploy the tfc-mcp-sse-gateway (mcp-proxy + terraform-cloud-mcp) to Cloud Run
+steps:
+  # Build gateway image from Dockerfile.mcp-gateway
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - Dockerfile.mcp-gateway
+      - -t
+      - asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-sse-gateway:$BUILD_ID
+      - .
+
+  # Push image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-sse-gateway:$BUILD_ID
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - tfc-mcp-sse-gateway
+      - --image=asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-sse-gateway:$BUILD_ID
+      - --region=asia-east1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --cpu=1
+      - --memory=512Mi
+      - --set-env-vars=RUST_LOG=warn,LOG_LEVEL=WARN,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false
+      - --set-secrets=TFC_TOKEN=TFC_TOKEN:latest
+      - --args=--host=0.0.0.0,--port=8080,--log-level,WARNING,--no-debug,--pass-environment,--,terraform-cloud-mcp
+      - --port=8080
+
+images:
+  - asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-sse-gateway:$BUILD_ID
+
+options:
+  logging: CLOUD_LOGGING_ONLY

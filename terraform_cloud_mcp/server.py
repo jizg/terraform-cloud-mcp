@@ -25,7 +25,8 @@ from terraform_cloud_mcp.tools import state_version_outputs
 from terraform_cloud_mcp.tools import variables
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+level = os.getenv("FASTMCP_LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, level, logging.INFO))
 
 # Create server instance
 mcp: FastMCP = FastMCP("Terraform Cloud MCP Server")
