@@ -12,6 +12,8 @@ dependencies = [
     "dotenv>=0.9.9",
     "httpx>=0.28.1",
     "fastmcp>=2.9.1",
+    "uvicorn>=0.32.1",
+    "sse-starlette>=2.2.1",
 ]
 packages = ["terraform_cloud_mcp", "api", "models", "tools", "utils"]
 

@@ -1,0 +1,40 @@
+# Google Cloud Build configuration for building and deploying to Cloud Run
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp:$BUILD_ID'
+      - '.'
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp:$BUILD_ID'
+  
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'terraform-cloud-mcp'
+      - '--image'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp:$BUILD_ID'
+      - '--region'
+      - 'asia-east1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'MCP_TRANSPORT=sse,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false,ENABLE_RAW_RESPONSE=false'
+      - '--set-secrets'
+      - 'TFC_TOKEN=TFC_TOKEN:latest'
+
+images:
+  - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp:$BUILD_ID'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

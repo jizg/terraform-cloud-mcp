@@ -1,0 +1,43 @@
+# Cloud Run service configuration
+# Deploy with: gcloud run services replace service.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: terraform-cloud-mcp
+  labels:
+    cloud.googleapis.com/location: us-central1
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '10'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/terraform-cloud-mcp:latest
+        ports:
+        - name: http1
+          containerPort: 8000
+        env:
+        - name: MCP_TRANSPORT
+          value: "sse"
+        - name: TFC_ADDRESS
+          value: "https://app.terraform.io"
+        - name: ENABLE_DELETE_TOOLS
+          value: "false"
+        - name: READ_ONLY_TOOLS
+          value: "false"
+        - name: TFC_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: TFC_TOKEN
+              key: latest
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+  traffic:
+  - percent: 100
+    latestRevision: true

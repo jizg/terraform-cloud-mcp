@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  # MCP Server in Streamable HTTP mode
+  mcp-http:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terraform-cloud-mcp-http
+    ports:
+      - "8000:8000"
+    environment:
+      - MCP_TRANSPORT=sse
+      - PORT=8000
+      - HOST=0.0.0.0
+      - TFC_ADDRESS=https://app.terraform.io
+      - TFC_TOKEN=${TFC_TOKEN}
+      - ENABLE_DELETE_TOOLS=false
+      - READ_ONLY_TOOLS=false
+      - ENABLE_RAW_RESPONSE=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MCP Server in stdio mode (for testing)
+  mcp-stdio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terraform-cloud-mcp-stdio
+    environment:
+      - MCP_TRANSPORT=stdio
+      - TFC_ADDRESS=https://app.terraform.io
+      - TFC_TOKEN=${TFC_TOKEN}
+      - ENABLE_DELETE_TOOLS=false
+      - READ_ONLY_TOOLS=false
+      - ENABLE_RAW_RESPONSE=false
+    stdin_open: true
+    tty: true
+    profiles:
+      - stdio
+
+  # Optional: Read-only mode for production-like testing
+  mcp-http-readonly:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terraform-cloud-mcp-readonly
+    ports:
+      - "8001:8000"
+    environment:
+      - MCP_TRANSPORT=sse
+      - PORT=8000
+      - HOST=0.0.0.0
+      - TFC_ADDRESS=https://app.terraform.io
+      - TFC_TOKEN=${TFC_TOKEN}
+      - ENABLE_DELETE_TOOLS=false
+      - READ_ONLY_TOOLS=true
+      - ENABLE_RAW_RESPONSE=false
+    restart: unless-stopped
+    profiles:
+      - readonly

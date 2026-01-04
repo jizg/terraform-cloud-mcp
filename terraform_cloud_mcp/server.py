@@ -4,6 +4,7 @@ Terraform Cloud MCP Server
 """
 
 import logging
+import os
 from fastmcp import FastMCP
 
 # Import environment configuration
@@ -147,8 +148,22 @@ mcp.tool(**delete_tool_config)(variables.delete_variable_from_variable_set)
 
 def main() -> None:
     """Run the Terraform Cloud MCP server."""
-
-    mcp.run(transport="stdio")
+    # Get transport mode from environment variable
+    # Defaults to "stdio" for backward compatibility
+    # Set to "sse" for Server-Sent Events (HTTP mode)
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    
+    if transport == "sse":
+        # Run in HTTP mode for Cloud Run
+        # Port can be overridden by PORT environment variable (Cloud Run default)
+        port = int(os.getenv("PORT", "8000"))
+        host = os.getenv("HOST", "0.0.0.0")
+        logging.info(f"Starting MCP server in SSE mode on {host}:{port}")
+        mcp.run(transport="sse", port=port, host=host)
+    else:
+        # Run in stdio mode for local/Claude Desktop usage
+        logging.info("Starting MCP server in stdio mode")
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
