@@ -8,10 +8,10 @@ services:
       dockerfile: Dockerfile
     container_name: terraform-cloud-mcp-http
     ports:
-      - "8000:8000"
+      - "8000:8080"
     environment:
-      - MCP_TRANSPORT=sse
-      - PORT=8000
+      - MCP_TRANSPORT=streamable-http
+      - PORT=8080
       - HOST=0.0.0.0
       - TFC_ADDRESS=https://app.terraform.io
       - TFC_TOKEN=${TFC_TOKEN}

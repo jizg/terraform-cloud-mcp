@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 
 [[package]]
@@ -450,12 +450,14 @@ wheels = [
 
 [[package]]
 name = "terraform-cloud-mcp"
-version = "0.8.17"
+version = "0.8.20"
 source = { editable = "." }
 dependencies = [
     { name = "dotenv" },
     { name = "fastmcp" },
     { name = "httpx" },
+    { name = "sse-starlette" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
@@ -463,6 +465,8 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastmcp", specifier = ">=2.9.1" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "sse-starlette", specifier = ">=2.2.1" },
+    { name = "uvicorn", specifier = ">=0.32.1" },
 ]
 
 [[package]]

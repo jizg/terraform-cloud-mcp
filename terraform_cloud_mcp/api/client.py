@@ -13,11 +13,7 @@ from ..utils.filters import (
     detect_operation_type,
 )
 
-DEFAULT_TOKEN = get_tfc_token()
 logger = logging.getLogger(__name__)
-
-if DEFAULT_TOKEN:
-    logger.info("Default token provided (masked for security)")
 
 
 # Type variable for generic request models
@@ -34,12 +30,34 @@ async def api_request(
     accept_text: bool = False,
     raw_response: Optional[bool] = None,
 ) -> Dict[str, Any]:
-    """Make a request to the Terraform Cloud API with proper error handling."""
-    token = token or DEFAULT_TOKEN
+    """Make a request to the Terraform Cloud API with proper error handling.
+
+    Args:
+        path: API endpoint path
+        method: HTTP method (GET, POST, PUT, DELETE, etc.)
+        token: Optional API token. If not provided, will check session token.
+        params: Query parameters
+        data: Request body data
+        external_url: If True, use path as full URL instead of appending to base URL
+        accept_text: If True, return response as text instead of JSON
+        raw_response: Optional override for response filtering
+
+    Returns:
+        API response data dictionary, or error dictionary if request fails
+
+    Raises:
+        ValueError: If no token is provided and no session token is set
+    """
+    # Use provided token, or get active token from session
+    if token is None:
+        from ..utils.env import get_active_token
+        token = await get_active_token()
+
     if not token:
-        return {
-            "error": "Token is required. Please set the TFC_TOKEN environment variable."
-        }
+        raise ValueError(
+            "Terraform Cloud API token is required. "
+            "Use set_token tool to configure your token."
+        )
 
     # Convert Pydantic models to dict
     request_data = (

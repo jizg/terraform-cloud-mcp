@@ -23,6 +23,7 @@ from terraform_cloud_mcp.tools import assessment_results
 from terraform_cloud_mcp.tools import state_versions
 from terraform_cloud_mcp.tools import state_version_outputs
 from terraform_cloud_mcp.tools import variables
+from terraform_cloud_mcp.tools import token
 
 # Configure logging
 level = os.getenv("FASTMCP_LOG_LEVEL", "INFO").upper()
@@ -50,6 +51,10 @@ delete_tool_config = {
 
 # Register account management tools
 mcp.tool()(account.get_account_details)
+
+# Register token management tools
+mcp.tool()(token.set_token)
+mcp.tool()(token.get_current_token)
 
 # Register workspace management tools
 mcp.tool()(workspaces.list_workspaces)
@@ -151,16 +156,16 @@ def main() -> None:
     """Run the Terraform Cloud MCP server."""
     # Get transport mode from environment variable
     # Defaults to "stdio" for backward compatibility
-    # Set to "sse" for Server-Sent Events (HTTP mode)
+    # Set to "sse" or "streamable-http" for HTTP mode (Cloud Run)
     transport = os.getenv("MCP_TRANSPORT", "stdio")
-    
-    if transport == "sse":
+
+    if transport in ("sse", "streamable-http"):
         # Run in HTTP mode for Cloud Run
         # Port can be overridden by PORT environment variable (Cloud Run default)
         port = int(os.getenv("PORT", "8000"))
         host = os.getenv("HOST", "0.0.0.0")
-        logging.info(f"Starting MCP server in SSE mode on {host}:{port}")
-        mcp.run(transport="sse", port=port, host=host)
+        logging.info(f"Starting MCP server in {transport} mode on {host}:{port}")
+        mcp.run(transport=transport, port=port, host=host)
     else:
         # Run in stdio mode for local/Claude Desktop usage
         logging.info("Starting MCP server in stdio mode")

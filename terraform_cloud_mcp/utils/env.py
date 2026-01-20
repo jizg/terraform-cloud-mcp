@@ -9,6 +9,29 @@ def get_tfc_token() -> Optional[str]:
     return os.getenv("TFC_TOKEN")
 
 
+async def get_active_token() -> str:
+    """Get active Terraform Cloud API token for the current session.
+
+    Checks session token (if set via set_token tool).
+
+    Returns:
+        The active token from session.
+
+    Raises:
+        ValueError: If no session token is set
+    """
+    from .session import get_session_token
+
+    session_token = await get_session_token()
+    if session_token:
+        return session_token
+
+    raise ValueError(
+        "Terraform Cloud API token is required. "
+        "Use set_token tool to configure your token."
+    )
+
+
 def get_tfc_address() -> str:
     """Get Terraform Cloud/Enterprise address from environment, with default of app.terraform.io."""
     return os.getenv("TFC_ADDRESS", "https://app.terraform.io")

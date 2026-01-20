@@ -25,9 +25,5 @@ ENV MCP_TRANSPORT="stdio"
 # Expose that this container expects these environment variables
 ENV TFC_TOKEN=""
 
-# For Cloud Run, expose the port
-ENV PORT=8000
-EXPOSE 8000
-
 # Set the entrypoint to run with uv
 ENTRYPOINT ["uv", "run", "terraform-cloud-mcp"]

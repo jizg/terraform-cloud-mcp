@@ -1,0 +1,41 @@
+# Google Cloud Build configuration for building and deploying to Cloud Run
+# This configuration uses the token-in-session feature for runtime authentication
+# No TFC_TOKEN environment variable or Secret Manager is required
+# Users must call the set_token tool at runtime to provide their Terraform Cloud API token
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-session:$BUILD_ID'
+      - '.'
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-session:$BUILD_ID'
+
+  # Deploy container image to Cloud Run with token-in-session authentication
+  # Note: No TFC_TOKEN environment variable is set. Users must call set_token tool at runtime.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'tfc-mcp-session'
+      - '--image=asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-session:$BUILD_ID'
+      - '--region=asia-east1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--cpu=1'
+      - '--memory=512Mi'
+      - '--set-env-vars=MCP_TRANSPORT=streamable-http,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false,ENABLE_RAW_RESPONSE=false'
+
+images:
+  - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-session:$BUILD_ID'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
