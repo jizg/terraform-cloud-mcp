@@ -1,0 +1,261 @@
+# AWS ECS Service Configuration for Terraform Cloud MCP Server
+# This configuration supports both ECS Fargate and App Runner deployments
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Terraform Cloud MCP Server - Multi-Platform Deployment'
+
+Parameters:
+  ServiceName:
+    Type: String
+    Default: terraform-cloud-mcp
+    Description: Name of the service
+  
+  ImageUri:
+    Type: String
+    Description: ECR image URI (e.g., 123456789.dkr.ecr.us-west-2.amazonaws.com/terraform-cloud-mcp:latest)
+  
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID for ECS deployment
+  
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet IDs for ECS deployment (at least 2)
+  
+  DeploymentType:
+    Type: String
+    Default: ecs
+    AllowedValues:
+      - ecs
+      - apprunner
+    Description: Deployment type - ECS Fargate or App Runner
+  
+  ContainerCpu:
+    Type: Number
+    Default: 512
+    Description: CPU units for container (ECS only)
+  
+  ContainerMemory:
+    Type: Number
+    Default: 1024
+    Description: Memory for container in MB (ECS only)
+  
+  DesiredCount:
+    Type: Number
+    Default: 1
+    Description: Number of tasks to run (ECS only)
+  
+  EnableDeleteTools:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Enable destructive operations
+  
+  ReadOnlyTools:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Enable only read-only operations
+
+Conditions:
+  IsEcs: !Equals [!Ref DeploymentType, 'ecs']
+  IsAppRunner: !Equals [!Ref DeploymentType, 'apprunner']
+
+Resources:
+  # ECS Cluster (for ECS deployment)
+  EcsCluster:
+    Condition: IsEcs
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${ServiceName}-cluster'
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 2
+
+  # CloudWatch Log Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/${DeploymentType}/${ServiceName}'
+      RetentionInDays: 30
+
+  # Task Execution Role (for ECS)
+  TaskExecutionRole:
+    Condition: IsEcs
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ServiceName}-task-execution'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  # Security Group (for ECS)
+  SecurityGroup:
+    Condition: IsEcs
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ServiceName}-sg'
+      GroupDescription: !Sub 'Security group for ${ServiceName}'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: Allow MCP traffic
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+
+  # Task Definition (for ECS)
+  TaskDefinition:
+    Condition: IsEcs
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref ServiceName
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: !Ref ContainerCpu
+      Memory: !Ref ContainerMemory
+      ExecutionRoleArn: !Ref TaskExecutionRole
+      ContainerDefinitions:
+        - Name: !Ref ServiceName
+          Image: !Ref ImageUri
+          PortMappings:
+            - ContainerPort: 8000
+              Protocol: tcp
+          Environment:
+            - Name: MCP_TRANSPORT
+              Value: streamable-http
+            - Name: TFC_ADDRESS
+              Value: https://app.terraform.io
+            - Name: ENABLE_DELETE_TOOLS
+              Value: !Ref EnableDeleteTools
+            - Name: READ_ONLY_TOOLS
+              Value: !Ref ReadOnlyTools
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:8000/health || exit 1
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  # ECS Service (for ECS)
+  EcsService:
+    Condition: IsEcs
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Ref ServiceName
+      Cluster: !Ref EcsCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets: !Ref SubnetIds
+          AssignPublicIp: ENABLED
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+
+  # App Runner Service (for App Runner)
+  AppRunnerService:
+    Condition: IsAppRunner
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: !Ref ServiceName
+      SourceConfiguration:
+        ImageRepository:
+          ImageIdentifier: !Ref ImageUri
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: '8000'
+            RuntimeEnvironmentVariables:
+              - Name: MCP_TRANSPORT
+                Value: streamable-http
+              - Name: TFC_ADDRESS
+                Value: https://app.terraform.io
+              - Name: ENABLE_DELETE_TOOLS
+                Value: !Ref EnableDeleteTools
+              - Name: READ_ONLY_TOOLS
+                Value: !Ref ReadOnlyTools
+      InstanceConfiguration:
+        Cpu: 1 vCPU
+        Memory: 2 GB
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /health
+        Interval: 10
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 5
+      NetworkConfiguration:
+        EgressConfiguration:
+          EgressType: DEFAULT
+      AutoScalingConfigurationArn: !Sub 'arn:aws:apprunner:${AWS::Region}:${AWS::AccountId}:autoscalingconfiguration/default/1/00000000000000000000000000000001'
+
+Outputs:
+  ServiceUrl:
+    Description: URL of the deployed service
+    Value: !If 
+      - IsAppRunner
+      - !Sub 'https://${AppRunnerService.ServiceUrl}'
+      - !Sub 'ECS Service - check the ECS console for task details'
+  
+  HealthCheckUrl:
+    Description: Health check endpoint
+    Value: !If 
+      - IsAppRunner
+      - !Sub 'https://${AppRunnerService.ServiceUrl}/health'
+      - !Sub 'ECS Service - health check at http://<task-ip>:8000/health'
+  
+  McEndpoint:
+    Description: MCP protocol endpoint
+    Value: !If 
+      - IsAppRunner
+      - !Sub 'https://${AppRunnerService.ServiceUrl}/mcp'
+      - !Sub 'ECS Service - MCP endpoint at http://<task-ip>:8000/mcp'
+  
+  LogGroup:
+    Description: CloudWatch Log Group
+    Value: !Ref LogGroup
+  
+  EcsCluster:
+    Condition: IsEcs
+    Description: ECS Cluster Name
+    Value: !Ref EcsCluster
+  
+  SecurityGroup:
+    Condition: IsEcs
+    Description: Security Group ID
+    Value: !Ref SecurityGroup

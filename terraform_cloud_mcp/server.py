@@ -8,6 +8,7 @@ session isolation and distributed storage support.
 
 import logging
 import os
+from typing import Dict, Any
 from fastmcp import FastMCP
 
 # Import environment configuration
@@ -167,6 +168,21 @@ mcp.tool()(variables.list_variables_in_variable_set)
 mcp.tool(**write_tool_config)(variables.create_variable_in_variable_set)
 mcp.tool(**write_tool_config)(variables.update_variable_in_variable_set)
 mcp.tool(**delete_tool_config)(variables.delete_variable_from_variable_set)
+
+
+@mcp.get("/health")
+def health_check() -> Dict[str, Any]:
+    """Health check endpoint for AWS load balancer and monitoring.
+    
+    Returns:
+        Dictionary with status information
+    """
+    return {
+        "status": "healthy",
+        "service": "terraform-cloud-mcp",
+        "version": "0.8.20",
+        "timestamp": os.getenv("START_TIME", "unknown")
+    }
 
 
 def main() -> None:
