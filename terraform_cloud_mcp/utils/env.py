@@ -1,7 +1,11 @@
 """Environment variable management for Terraform Cloud MCP"""
 
 import os
+import logging
+from fastmcp import Context
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def get_tfc_token() -> Optional[str]:
@@ -9,26 +13,43 @@ def get_tfc_token() -> Optional[str]:
     return os.getenv("TFC_TOKEN")
 
 
-async def get_active_token() -> str:
+async def get_active_token(ctx: Optional[Context] = None) -> str:
     """Get active Terraform Cloud API token for the current session.
 
-    Checks session token (if set via set_token tool).
+    Checks session state for token (stored via set_token tool).
+    Falls back to TFC_TOKEN environment variable if no session token.
+
+    Args:
+        ctx: FastMCP Context object
 
     Returns:
-        The active token from session.
+        The active token from session or environment.
 
     Raises:
-        ValueError: If no session token is set
+        ValueError: If no token is configured
     """
-    from .session import get_session_token
+    from .session import get_session_token, get_session_id_safe
 
-    session_token = await get_session_token()
-    if session_token:
-        return session_token
+    if ctx:
+        session_id = get_session_id_safe(ctx)
+        logger.debug(f"[Get Active Token] Checking token for session: '{session_id}'")
+        
+        session_token = await get_session_token(ctx)
+        
+        if session_token:
+            logger.debug(f"[Get Active Token] Found session token for '{session_id}'")
+            return session_token
+    
+    # Fall back to environment variable
+    env_token = get_tfc_token()
+    if env_token:
+        logger.debug("[Get Active Token] Using TFC_TOKEN environment variable")
+        return env_token
 
+    logger.error("[Get Active Token] No token found in session or environment")
     raise ValueError(
         "Terraform Cloud API token is required. "
-        "Use set_token tool to configure your token."
+        "Use set_token tool to configure your token, or set TFC_TOKEN environment variable."
     )
 
 

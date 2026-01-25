@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..utils.decorators import handle_api_errors
 from ..utils.payload import create_api_payload
 from ..utils.request import query_params
@@ -23,7 +24,7 @@ from ..models.workspaces import (
 
 @handle_api_errors
 async def create_workspace(
-    organization: str, name: str, params: Optional[WorkspaceParams] = None
+    organization: str, name: str, params: Optional[WorkspaceParams] = None, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Create a new workspace in an organization.
 
@@ -64,13 +65,13 @@ async def create_workspace(
     )
 
     return await api_request(
-        f"organizations/{organization}/workspaces", method="POST", data=payload
+        f"organizations/{organization}/workspaces", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
 async def update_workspace(
-    organization: str, workspace_name: str, params: Optional[WorkspaceParams] = None
+    organization: str, workspace_name: str, params: Optional[WorkspaceParams] = None, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Update an existing workspace.
 
@@ -129,6 +130,7 @@ async def update_workspace(
         f"organizations/{organization}/workspaces/{workspace_name}",
         method="PATCH",
         data=payload,
+        ctx=ctx,
     )
 
     # Log response for debugging
@@ -143,6 +145,7 @@ async def list_workspaces(
     page_number: int = 1,
     page_size: int = 20,
     search: Optional[str] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """List workspaces in an organization.
 
@@ -176,12 +179,12 @@ async def list_workspaces(
     params = query_params(request)
 
     return await api_request(
-        f"organizations/{organization}/workspaces", method="GET", params=params
+        f"organizations/{organization}/workspaces", method="GET", params=params, ctx=ctx
     )
 
 
 @handle_api_errors
-async def delete_workspace(organization: str, workspace_name: str) -> APIResponse:
+async def delete_workspace(organization: str, workspace_name: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete a workspace.
 
     Permanently deletes a Terraform Cloud workspace and all its resources including
@@ -207,11 +210,12 @@ async def delete_workspace(organization: str, workspace_name: str) -> APIRespons
     return await api_request(
         f"organizations/{organization}/workspaces/{workspace_name}",
         method="DELETE",
+        ctx=ctx,
     )
 
 
 @handle_api_errors
-async def safe_delete_workspace(organization: str, workspace_name: str) -> APIResponse:
+async def safe_delete_workspace(organization: str, workspace_name: str, ctx: Optional[Context] = None) -> APIResponse:
     """Safely delete a workspace by first checking if it can be deleted.
 
     Initiates a safe delete operation which checks if the workspace has resources
@@ -242,11 +246,12 @@ async def safe_delete_workspace(organization: str, workspace_name: str) -> APIRe
     return await api_request(
         f"organizations/{organization}/workspaces/{workspace_name}/actions/safe-delete",
         method="POST",
+        ctx=ctx,
     )
 
 
 @handle_api_errors
-async def lock_workspace(workspace_id: str, reason: str = "") -> APIResponse:
+async def lock_workspace(workspace_id: str, reason: str = "", ctx: Optional[Context] = None) -> APIResponse:
     """Lock a workspace.
 
     Locks a workspace to prevent runs from being queued. This is useful when you want
@@ -269,12 +274,12 @@ async def lock_workspace(workspace_id: str, reason: str = "") -> APIResponse:
     if reason:
         payload = {"reason": reason}
     return await api_request(
-        f"workspaces/{workspace_id}/actions/lock", method="POST", data=payload
+        f"workspaces/{workspace_id}/actions/lock", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def unlock_workspace(workspace_id: str) -> APIResponse:
+async def unlock_workspace(workspace_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Unlock a workspace.
 
     Removes the lock from a workspace, allowing runs to be queued. This enables
@@ -291,11 +296,11 @@ async def unlock_workspace(workspace_id: str) -> APIResponse:
     See:
         docs/tools/workspace.md for reference documentation
     """
-    return await api_request(f"workspaces/{workspace_id}/actions/unlock", method="POST")
+    return await api_request(f"workspaces/{workspace_id}/actions/unlock", method="POST", ctx=ctx)
 
 
 @handle_api_errors
-async def force_unlock_workspace(workspace_id: str) -> APIResponse:
+async def force_unlock_workspace(workspace_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Force unlock a workspace. This should be used with caution.
 
     Forces a workspace to unlock even when the normal unlock process isn't possible.
@@ -318,12 +323,12 @@ async def force_unlock_workspace(workspace_id: str) -> APIResponse:
     """
     # Make API request
     return await api_request(
-        f"workspaces/{workspace_id}/actions/force-unlock", method="POST"
+        f"workspaces/{workspace_id}/actions/force-unlock", method="POST", ctx=ctx
     )
 
 
 @handle_api_errors
-async def set_data_retention_policy(workspace_id: str, days: int) -> APIResponse:
+async def set_data_retention_policy(workspace_id: str, days: int, ctx: Optional[Context] = None) -> APIResponse:
     """Set a data retention policy for a workspace.
 
     Creates or updates a data retention policy that determines how long Terraform Cloud
@@ -357,11 +362,12 @@ async def set_data_retention_policy(workspace_id: str, days: int) -> APIResponse
         f"workspaces/{workspace_id}/relationships/data-retention-policy",
         method="POST",
         data=payload,
+        ctx=ctx,
     )
 
 
 @handle_api_errors
-async def get_data_retention_policy(workspace_id: str) -> APIResponse:
+async def get_data_retention_policy(workspace_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get the data retention policy for a workspace.
 
     Retrieves the current data retention policy for a workspace, which defines how long
@@ -380,12 +386,12 @@ async def get_data_retention_policy(workspace_id: str) -> APIResponse:
     """
     # Make API request
     return await api_request(
-        f"workspaces/{workspace_id}/relationships/data-retention-policy", method="GET"
+        f"workspaces/{workspace_id}/relationships/data-retention-policy", method="GET", ctx=ctx
     )
 
 
 @handle_api_errors
-async def delete_data_retention_policy(workspace_id: str) -> APIResponse:
+async def delete_data_retention_policy(workspace_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete the data retention policy for a workspace.
 
     Removes the data retention policy from a workspace, reverting to the default behavior
@@ -407,12 +413,13 @@ async def delete_data_retention_policy(workspace_id: str) -> APIResponse:
     return await api_request(
         f"workspaces/{workspace_id}/relationships/data-retention-policy",
         method="DELETE",
+        ctx=ctx,
     )
 
 
 @handle_api_errors
 async def get_workspace_details(
-    workspace_id: str = "", organization: str = "", workspace_name: str = ""
+    workspace_id: str = "", organization: str = "", workspace_name: str = "", ctx: Optional[Context] = None
 ) -> APIResponse:
     """Get details for a specific workspace, identified either by ID or by org name and workspace name.
 
@@ -451,4 +458,4 @@ async def get_workspace_details(
         path = f"organizations/{organization}/workspaces/{workspace_name}"
 
     # Make API request
-    return await api_request(path, method="GET")
+    return await api_request(path, method="GET", ctx=ctx)

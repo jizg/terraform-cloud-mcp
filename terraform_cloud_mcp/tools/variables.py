@@ -11,6 +11,7 @@ Reference:
 from typing import List, Optional
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..utils.decorators import handle_api_errors
 from ..utils.payload import create_api_payload
 from ..utils.request import query_params
@@ -32,7 +33,7 @@ from ..models.variables import (
 
 
 @handle_api_errors
-async def list_workspace_variables(workspace_id: str) -> APIResponse:
+async def list_workspace_variables(workspace_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """List all variables for a workspace.
 
     Retrieves all variables (both Terraform and environment) configured
@@ -50,7 +51,7 @@ async def list_workspace_variables(workspace_id: str) -> APIResponse:
         docs/tools/variables.md#list-workspace-variables for reference documentation
     """
     endpoint = f"workspaces/{workspace_id}/vars"
-    return await api_request(endpoint, method="GET")
+    return await api_request(endpoint, method="GET", ctx=ctx)
 
 
 @handle_api_errors
@@ -59,6 +60,7 @@ async def create_workspace_variable(
     key: str,
     category: str,
     params: Optional[WorkspaceVariableParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Create a new variable in a workspace.
 
@@ -97,7 +99,7 @@ async def create_workspace_variable(
     )
 
     return await api_request(
-        f"workspaces/{workspace_id}/vars", method="POST", data=payload
+        f"workspaces/{workspace_id}/vars", method="POST", data=payload, ctx=ctx
     )
 
 
@@ -106,6 +108,7 @@ async def update_workspace_variable(
     workspace_id: str,
     variable_id: str,
     params: Optional[WorkspaceVariableParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Update an existing workspace variable.
 
@@ -144,12 +147,12 @@ async def update_workspace_variable(
     )
 
     return await api_request(
-        f"workspaces/{workspace_id}/vars/{variable_id}", method="PATCH", data=payload
+        f"workspaces/{workspace_id}/vars/{variable_id}", method="PATCH", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def delete_workspace_variable(workspace_id: str, variable_id: str) -> APIResponse:
+async def delete_workspace_variable(workspace_id: str, variable_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete a workspace variable.
 
     Permanently removes a variable from a workspace. This action cannot be undone.
@@ -167,7 +170,7 @@ async def delete_workspace_variable(workspace_id: str, variable_id: str) -> APIR
         docs/tools/variables.md#delete-workspace-variable for reference documentation
     """
     endpoint = f"workspaces/{workspace_id}/vars/{variable_id}"
-    return await api_request(endpoint, method="DELETE")
+    return await api_request(endpoint, method="DELETE", ctx=ctx)
 
 
 # Variable Sets Tools
@@ -178,6 +181,7 @@ async def list_variable_sets(
     organization: str,
     page_number: int = 1,
     page_size: int = 20,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """List variable sets in an organization.
 
@@ -206,12 +210,12 @@ async def list_variable_sets(
     params = query_params(request)
 
     return await api_request(
-        f"organizations/{organization}/varsets", method="GET", params=params
+        f"organizations/{organization}/varsets", method="GET", params=params, ctx=ctx
     )
 
 
 @handle_api_errors
-async def get_variable_set(varset_id: str) -> APIResponse:
+async def get_variable_set(varset_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific variable set.
 
     Retrieves comprehensive information about a variable set including its
@@ -229,7 +233,7 @@ async def get_variable_set(varset_id: str) -> APIResponse:
         docs/tools/variables.md#get-variable-set for reference documentation
     """
     endpoint = f"varsets/{varset_id}"
-    return await api_request(endpoint, method="GET")
+    return await api_request(endpoint, method="GET", ctx=ctx)
 
 
 @handle_api_errors
@@ -237,6 +241,7 @@ async def create_variable_set(
     organization: str,
     name: str,
     params: Optional[VariableSetParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Create a new variable set in an organization.
 
@@ -270,7 +275,7 @@ async def create_variable_set(
     )
 
     return await api_request(
-        f"organizations/{organization}/varsets", method="POST", data=payload
+        f"organizations/{organization}/varsets", method="POST", data=payload, ctx=ctx
     )
 
 
@@ -278,6 +283,7 @@ async def create_variable_set(
 async def update_variable_set(
     varset_id: str,
     params: Optional[VariableSetParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Update an existing variable set.
 
@@ -308,11 +314,11 @@ async def update_variable_set(
         resource_type="varsets", model=request, exclude_fields={"varset_id"}
     )
 
-    return await api_request(f"varsets/{varset_id}", method="PATCH", data=payload)
+    return await api_request(f"varsets/{varset_id}", method="PATCH", data=payload, ctx=ctx)
 
 
 @handle_api_errors
-async def delete_variable_set(varset_id: str) -> APIResponse:
+async def delete_variable_set(varset_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete a variable set.
 
     Permanently removes a variable set and all its variables. This action cannot be undone.
@@ -330,12 +336,12 @@ async def delete_variable_set(varset_id: str) -> APIResponse:
         docs/tools/variables.md#delete-variable-set for reference documentation
     """
     endpoint = f"varsets/{varset_id}"
-    return await api_request(endpoint, method="DELETE")
+    return await api_request(endpoint, method="DELETE", ctx=ctx)
 
 
 @handle_api_errors
 async def assign_variable_set_to_workspaces(
-    varset_id: str, workspace_ids: List[str]
+    varset_id: str, workspace_ids: List[str], ctx: Optional[Context] = None
 ) -> APIResponse:
     """Assign a variable set to one or more workspaces.
 
@@ -362,12 +368,12 @@ async def assign_variable_set_to_workspaces(
 
     payload = {"data": relationships_data}
     endpoint = f"varsets/{varset_id}/relationships/workspaces"
-    return await api_request(endpoint, method="POST", data=payload)
+    return await api_request(endpoint, method="POST", data=payload, ctx=ctx)
 
 
 @handle_api_errors
 async def unassign_variable_set_from_workspaces(
-    varset_id: str, workspace_ids: List[str]
+    varset_id: str, workspace_ids: List[str], ctx: Optional[Context] = None
 ) -> APIResponse:
     """Remove a variable set from one or more workspaces.
 
@@ -393,12 +399,12 @@ async def unassign_variable_set_from_workspaces(
 
     payload = {"data": relationships_data}
     endpoint = f"varsets/{varset_id}/relationships/workspaces"
-    return await api_request(endpoint, method="DELETE", data=payload)
+    return await api_request(endpoint, method="DELETE", data=payload, ctx=ctx)
 
 
 @handle_api_errors
 async def assign_variable_set_to_projects(
-    varset_id: str, project_ids: List[str]
+    varset_id: str, project_ids: List[str], ctx: Optional[Context] = None
 ) -> APIResponse:
     """Assign a variable set to one or more projects.
 
@@ -424,12 +430,12 @@ async def assign_variable_set_to_projects(
 
     payload = {"data": relationships_data}
     endpoint = f"varsets/{varset_id}/relationships/projects"
-    return await api_request(endpoint, method="POST", data=payload)
+    return await api_request(endpoint, method="POST", data=payload, ctx=ctx)
 
 
 @handle_api_errors
 async def unassign_variable_set_from_projects(
-    varset_id: str, project_ids: List[str]
+    varset_id: str, project_ids: List[str], ctx: Optional[Context] = None
 ) -> APIResponse:
     """Remove a variable set from one or more projects.
 
@@ -455,14 +461,14 @@ async def unassign_variable_set_from_projects(
 
     payload = {"data": relationships_data}
     endpoint = f"varsets/{varset_id}/relationships/projects"
-    return await api_request(endpoint, method="DELETE", data=payload)
+    return await api_request(endpoint, method="DELETE", data=payload, ctx=ctx)
 
 
 # Variable Set Variables Tools
 
 
 @handle_api_errors
-async def list_variables_in_variable_set(varset_id: str) -> APIResponse:
+async def list_variables_in_variable_set(varset_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """List all variables in a variable set.
 
     Retrieves all variables that belong to a specific variable set,
@@ -480,7 +486,7 @@ async def list_variables_in_variable_set(varset_id: str) -> APIResponse:
         docs/tools/variables.md#list-variables-in-variable-set for reference documentation
     """
     endpoint = f"varsets/{varset_id}/relationships/vars"
-    return await api_request(endpoint, method="GET")
+    return await api_request(endpoint, method="GET", ctx=ctx)
 
 
 @handle_api_errors
@@ -489,6 +495,7 @@ async def create_variable_in_variable_set(
     key: str,
     category: str,
     params: Optional[VariableSetVariableParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Create a new variable in a variable set.
 
@@ -528,7 +535,7 @@ async def create_variable_in_variable_set(
     payload = {"data": {"type": "vars", "attributes": var_data}}
 
     return await api_request(
-        f"varsets/{varset_id}/relationships/vars", method="POST", data=payload
+        f"varsets/{varset_id}/relationships/vars", method="POST", data=payload, ctx=ctx
     )
 
 
@@ -537,6 +544,7 @@ async def update_variable_in_variable_set(
     varset_id: str,
     var_id: str,
     params: Optional[VariableSetVariableParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Update an existing variable in a variable set.
 
@@ -568,12 +576,12 @@ async def update_variable_in_variable_set(
     payload = {"data": {"type": "vars", "attributes": param_dict}}
 
     return await api_request(
-        f"varsets/{varset_id}/relationships/vars/{var_id}", method="PATCH", data=payload
+        f"varsets/{varset_id}/relationships/vars/{var_id}", method="PATCH", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def delete_variable_from_variable_set(varset_id: str, var_id: str) -> APIResponse:
+async def delete_variable_from_variable_set(varset_id: str, var_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete a variable from a variable set.
 
     Permanently removes a variable from a variable set. This action cannot be undone.
@@ -591,4 +599,4 @@ async def delete_variable_from_variable_set(varset_id: str, var_id: str) -> APIR
         docs/tools/variables.md#delete-variable-from-variable-set for reference documentation
     """
     endpoint = f"varsets/{varset_id}/relationships/vars/{var_id}"
-    return await api_request(endpoint, method="DELETE")
+    return await api_request(endpoint, method="DELETE", ctx=ctx)

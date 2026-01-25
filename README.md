@@ -342,8 +342,11 @@ uv pip install black mypy pydantic ruff
 ### Basic Development Commands
 
 ```bash
-# Run the server in development mode
-mcp dev terraform_cloud_mcp/server.py
+# Run the server in stdio mode (for local development with Claude Desktop)
+terraform-cloud-mcp
+
+# Or using Python module
+python -m terraform_cloud_mcp.server
 
 # Run tests and quality checks
 uv run -m mypy .

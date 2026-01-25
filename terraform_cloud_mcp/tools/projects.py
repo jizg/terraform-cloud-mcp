@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List, Optional
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..utils.decorators import handle_api_errors
 from ..utils.payload import create_api_payload
 from ..utils.request import query_params
@@ -25,7 +26,7 @@ from ..models.projects import (
 
 @handle_api_errors
 async def create_project(
-    organization: str, name: str, params: Optional[ProjectParams] = None
+    organization: str, name: str, params: Optional[ProjectParams] = None, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Create a new project in an organization.
 
@@ -82,13 +83,13 @@ async def create_project(
     logger.debug(f"Create project payload: {payload}")
 
     return await api_request(
-        f"organizations/{organization}/projects", method="POST", data=payload
+        f"organizations/{organization}/projects", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
 async def update_project(
-    project_id: str, params: Optional[ProjectParams] = None
+    project_id: str, params: Optional[ProjectParams] = None, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Update an existing project.
 
@@ -151,7 +152,7 @@ async def update_project(
     logger.debug(f"Update project payload: {payload}")
 
     # Make API request
-    return await api_request(f"projects/{project_id}", method="PATCH", data=payload)
+    return await api_request(f"projects/{project_id}", method="PATCH", data=payload, ctx=ctx)
 
 
 @handle_api_errors
@@ -164,6 +165,7 @@ async def list_projects(
     filter_permissions_update: Optional[bool] = None,
     filter_permissions_create_workspace: Optional[bool] = None,
     sort: Optional[str] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """List projects in an organization.
 
@@ -206,12 +208,12 @@ async def list_projects(
 
     # Make API request
     return await api_request(
-        f"organizations/{organization}/projects", method="GET", params=params
+        f"organizations/{organization}/projects", method="GET", params=params, ctx=ctx
     )
 
 
 @handle_api_errors
-async def get_project_details(project_id: str) -> APIResponse:
+async def get_project_details(project_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific project.
 
     Retrieves comprehensive information about a project including its configuration,
@@ -229,11 +231,11 @@ async def get_project_details(project_id: str) -> APIResponse:
         docs/tools/project.md for reference documentation
     """
     # Make API request
-    return await api_request(f"projects/{project_id}", method="GET")
+    return await api_request(f"projects/{project_id}", method="GET", ctx=ctx)
 
 
 @handle_api_errors
-async def delete_project(project_id: str) -> APIResponse:
+async def delete_project(project_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete a project.
 
     Permanently deletes a Terraform Cloud project. This operation will
@@ -251,11 +253,11 @@ async def delete_project(project_id: str) -> APIResponse:
         docs/tools/project.md for reference documentation
     """
     # Make API request
-    return await api_request(f"projects/{project_id}", method="DELETE")
+    return await api_request(f"projects/{project_id}", method="DELETE", ctx=ctx)
 
 
 @handle_api_errors
-async def list_project_tag_bindings(project_id: str) -> APIResponse:
+async def list_project_tag_bindings(project_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """List tag bindings for a project.
 
     Retrieves the list of tags bound to a specific project. These tags are
@@ -273,12 +275,12 @@ async def list_project_tag_bindings(project_id: str) -> APIResponse:
         docs/tools/project.md for reference documentation
     """
     # Make API request
-    return await api_request(f"projects/{project_id}/tag-bindings", method="GET")
+    return await api_request(f"projects/{project_id}/tag-bindings", method="GET", ctx=ctx)
 
 
 @handle_api_errors
 async def add_update_project_tag_bindings(
-    project_id: str, tag_bindings: List[TagBinding]
+    project_id: str, tag_bindings: List[TagBinding], ctx: Optional[Context] = None
 ) -> APIResponse:
     """Add or update tag bindings on a project.
 
@@ -311,13 +313,13 @@ async def add_update_project_tag_bindings(
 
     # Make API request
     return await api_request(
-        f"projects/{project_id}/tag-bindings", method="PATCH", data=payload
+        f"projects/{project_id}/tag-bindings", method="PATCH", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
 async def move_workspaces_to_project(
-    project_id: str, workspace_ids: List[str]
+    project_id: str, workspace_ids: List[str], ctx: Optional[Context] = None
 ) -> APIResponse:
     """Move workspaces into a project.
 
@@ -346,5 +348,5 @@ async def move_workspaces_to_project(
 
     # Make API request
     return await api_request(
-        f"projects/{project_id}/relationships/workspaces", method="POST", data=payload
+        f"projects/{project_id}/relationships/workspaces", method="POST", data=payload, ctx=ctx
     )

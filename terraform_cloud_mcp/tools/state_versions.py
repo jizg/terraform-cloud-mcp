@@ -9,6 +9,7 @@ Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-v
 from typing import Optional
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..models.base import APIResponse
 from ..models.state_versions import (
     CurrentStateVersionRequest,
@@ -30,6 +31,7 @@ async def list_state_versions(
     page_number: int = 1,
     page_size: int = 20,
     filter_status: Optional[str] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """List state versions in a workspace.
 
@@ -75,11 +77,11 @@ async def list_state_versions(
     query = query_params(params)
 
     # Make API request
-    return await api_request("state-versions", params=query)
+    return await api_request("state-versions", params=query, ctx=ctx)
 
 
 @handle_api_errors
-async def get_current_state_version(workspace_id: str) -> APIResponse:
+async def get_current_state_version(workspace_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get the current state version for a workspace.
 
     Retrieves the current state version for a workspace, which is the input
@@ -100,11 +102,11 @@ async def get_current_state_version(workspace_id: str) -> APIResponse:
     params = CurrentStateVersionRequest(workspace_id=workspace_id)
 
     # Make API request
-    return await api_request(f"workspaces/{params.workspace_id}/current-state-version")
+    return await api_request(f"workspaces/{params.workspace_id}/current-state-version", ctx=ctx)
 
 
 @handle_api_errors
-async def get_state_version(state_version_id: str) -> APIResponse:
+async def get_state_version(state_version_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific state version.
 
     Retrieves comprehensive information about a state version including its status,
@@ -125,7 +127,7 @@ async def get_state_version(state_version_id: str) -> APIResponse:
     params = StateVersionRequest(state_version_id=state_version_id)
 
     # Make API request
-    return await api_request(f"state-versions/{params.state_version_id}")
+    return await api_request(f"state-versions/{params.state_version_id}", ctx=ctx)
 
 
 @handle_api_errors
@@ -134,6 +136,7 @@ async def create_state_version(
     serial: int,
     md5: str,
     params: Optional[StateVersionParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Create a state version in a workspace.
 
@@ -192,12 +195,13 @@ async def create_state_version(
         f"workspaces/{request_params.workspace_id}/state-versions",
         method="POST",
         data=payload,
+        ctx=ctx,
     )
 
 
 @handle_api_errors
 async def download_state_file(
-    state_version_id: str, json_format: bool = False
+    state_version_id: str, json_format: bool = False, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Download the state file content.
 
@@ -219,7 +223,7 @@ async def download_state_file(
     params = StateVersionRequest(state_version_id=state_version_id)
 
     # First get state version details to get the download URL
-    state_version = await api_request(f"state-versions/{params.state_version_id}")
+    state_version = await api_request(f"state-versions/{params.state_version_id}", ctx=ctx)
 
     # Determine which URL to use based on format request
     url_attr = (
@@ -237,4 +241,4 @@ async def download_state_file(
             return {"error": "State download URL not available for this state version"}
 
     # Use the enhanced api_request to fetch state from the external URL
-    return await api_request(download_url, external_url=True, accept_text=True)
+    return await api_request(download_url, external_url=True, accept_text=True, ctx=ctx)

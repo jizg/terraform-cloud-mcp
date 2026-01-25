@@ -20,10 +20,11 @@ from ..models.organizations import (
     OrganizationEntitlementsRequest,
     OrganizationDeleteRequest,
 )
+from fastmcp import Context
 
 
 @handle_api_errors
-async def get_organization_details(organization: str) -> APIResponse:
+async def get_organization_details(organization: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific organization
 
     Retrieves comprehensive information about an organization including settings,
@@ -41,11 +42,11 @@ async def get_organization_details(organization: str) -> APIResponse:
         docs/tools/organization.md for reference documentation
     """
     request = OrganizationDetailsRequest(organization=organization)
-    return await api_request(f"organizations/{request.organization}")
+    return await api_request(f"organizations/{request.organization}", ctx=ctx)
 
 
 @handle_api_errors
-async def get_organization_entitlements(organization: str) -> APIResponse:
+async def get_organization_entitlements(organization: str, ctx: Optional[Context] = None) -> APIResponse:
     """Show entitlement set for organization features
 
     Retrieves information about available features and capabilities based on
@@ -63,7 +64,7 @@ async def get_organization_entitlements(organization: str) -> APIResponse:
         docs/tools/organization.md for reference documentation
     """
     request = OrganizationEntitlementsRequest(organization=organization)
-    return await api_request(f"organizations/{request.organization}/entitlement-set")
+    return await api_request(f"organizations/{request.organization}/entitlement-set", ctx=ctx)
 
 
 @handle_api_errors
@@ -73,6 +74,7 @@ async def list_organizations(
     q: Optional[str] = None,
     query_email: Optional[str] = None,
     query_name: Optional[str] = None,
+    ctx: Optional[Context] = None
 ) -> APIResponse:
     """List organizations with filtering options
 
@@ -105,12 +107,12 @@ async def list_organizations(
     # Get all query parameters - now automatically handles query_email and query_name
     params = query_params(request)
 
-    return await api_request("organizations", params=params)
+    return await api_request("organizations", params=params, ctx=ctx)
 
 
 @handle_api_errors
 async def create_organization(
-    name: str, email: str, params: Optional[OrganizationParams] = None
+    name: str, email: str, params: Optional[OrganizationParams] = None, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Create a new organization in Terraform Cloud
 
@@ -151,12 +153,12 @@ async def create_organization(
     payload = create_api_payload(resource_type="organizations", model=request)
 
     # Make the API request
-    return await api_request("organizations", method="POST", data=payload)
+    return await api_request("organizations", method="POST", data=payload, ctx=ctx)
 
 
 @handle_api_errors
 async def update_organization(
-    organization: str, params: Optional[OrganizationParams] = None
+    organization: str, params: Optional[OrganizationParams] = None, ctx: Optional[Context] = None
 ) -> APIResponse:
     """Update an existing organization in Terraform Cloud
 
@@ -198,12 +200,12 @@ async def update_organization(
 
     # Make the API request
     return await api_request(
-        f"organizations/{organization}", method="PATCH", data=payload
+        f"organizations/{organization}", method="PATCH", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def delete_organization(organization: str) -> APIResponse:
+async def delete_organization(organization: str, ctx: Optional[Context] = None) -> APIResponse:
     """Delete an organization from Terraform Cloud
 
     Permanently removes an organization including all its workspaces, teams, and resources.
@@ -225,4 +227,4 @@ async def delete_organization(organization: str) -> APIResponse:
     request = OrganizationDeleteRequest(organization=organization)
 
     # Make API request
-    return await api_request(f"organizations/{request.organization}", method="DELETE")
+    return await api_request(f"organizations/{request.organization}", method="DELETE", ctx=ctx)

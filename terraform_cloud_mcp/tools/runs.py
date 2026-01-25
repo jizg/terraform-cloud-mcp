@@ -7,6 +7,7 @@ Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run
 from typing import Optional
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..utils.decorators import handle_api_errors
 from ..utils.payload import create_api_payload, add_relationship
 from ..utils.request import query_params
@@ -24,6 +25,7 @@ from ..models.runs import (
 async def create_run(
     workspace_id: str,
     params: Optional[RunParams] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """Create a run in a workspace
 
@@ -97,7 +99,7 @@ async def create_run(
             {"key": var.key, "value": var.value} for var in variables
         ]
 
-    return await api_request("runs", method="POST", data=payload)
+    return await api_request("runs", method="POST", data=payload, ctx=ctx)
 
 
 @handle_api_errors
@@ -114,6 +116,7 @@ async def list_runs_in_workspace(
     search_user: Optional[str] = None,
     search_commit: Optional[str] = None,
     search_basic: Optional[str] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """List runs in a workspace with filtering and pagination
 
@@ -164,7 +167,7 @@ async def list_runs_in_workspace(
 
     # Make API request
     return await api_request(
-        f"workspaces/{workspace_id}/runs", method="GET", params=params
+        f"workspaces/{workspace_id}/runs", method="GET", params=params, ctx=ctx
     )
 
 
@@ -183,6 +186,7 @@ async def list_runs_in_organization(
     search_user: Optional[str] = None,
     search_commit: Optional[str] = None,
     search_basic: Optional[str] = None,
+    ctx: Optional[Context] = None,
 ) -> APIResponse:
     """List runs across all workspaces in an organization
 
@@ -235,12 +239,12 @@ async def list_runs_in_organization(
 
     # Make API request
     return await api_request(
-        f"organizations/{organization}/runs", method="GET", params=params
+        f"organizations/{organization}/runs", method="GET", params=params, ctx=ctx
     )
 
 
 @handle_api_errors
-async def get_run_details(run_id: str) -> APIResponse:
+async def get_run_details(run_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get detailed information about a specific run
 
     Retrieves comprehensive information about a run including its current status,
@@ -258,11 +262,11 @@ async def get_run_details(run_id: str) -> APIResponse:
         docs/tools/run.md for reference documentation
     """
     # Make API request
-    return await api_request(f"runs/{run_id}", method="GET")
+    return await api_request(f"runs/{run_id}", method="GET", ctx=ctx)
 
 
 @handle_api_errors
-async def apply_run(run_id: str, comment: str = "") -> APIResponse:
+async def apply_run(run_id: str, comment: str = "", ctx: Optional[Context] = None) -> APIResponse:
     """Apply a run that is paused waiting for confirmation after a plan
 
     Confirms and executes the apply phase for a run that has completed planning and is
@@ -291,12 +295,12 @@ async def apply_run(run_id: str, comment: str = "") -> APIResponse:
 
     # Make API request
     return await api_request(
-        f"runs/{run_id}/actions/apply", method="POST", data=payload
+        f"runs/{run_id}/actions/apply", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def discard_run(run_id: str, comment: str = "") -> APIResponse:
+async def discard_run(run_id: str, comment: str = "", ctx: Optional[Context] = None) -> APIResponse:
     """Discard a run that is paused waiting for confirmation
 
     Cancels a run without applying its changes, typically used when the plan
@@ -325,12 +329,12 @@ async def discard_run(run_id: str, comment: str = "") -> APIResponse:
 
     # Make API request
     return await api_request(
-        f"runs/{run_id}/actions/discard", method="POST", data=payload
+        f"runs/{run_id}/actions/discard", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def cancel_run(run_id: str, comment: str = "") -> APIResponse:
+async def cancel_run(run_id: str, comment: str = "", ctx: Optional[Context] = None) -> APIResponse:
     """Cancel a run that is currently planning or applying
 
     Gracefully stops an in-progress run during planning or applying phases. Use this
@@ -360,12 +364,12 @@ async def cancel_run(run_id: str, comment: str = "") -> APIResponse:
 
     # Make API request
     return await api_request(
-        f"runs/{run_id}/actions/cancel", method="POST", data=payload
+        f"runs/{run_id}/actions/cancel", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def force_cancel_run(run_id: str, comment: str = "") -> APIResponse:
+async def force_cancel_run(run_id: str, comment: str = "", ctx: Optional[Context] = None) -> APIResponse:
     """Forcefully cancel a run immediately
 
     Immediately terminates a run that hasn't responded to a normal cancel request.
@@ -395,12 +399,12 @@ async def force_cancel_run(run_id: str, comment: str = "") -> APIResponse:
 
     # Make API request
     return await api_request(
-        f"runs/{run_id}/actions/force-cancel", method="POST", data=payload
+        f"runs/{run_id}/actions/force-cancel", method="POST", data=payload, ctx=ctx
     )
 
 
 @handle_api_errors
-async def force_execute_run(run_id: str) -> APIResponse:
+async def force_execute_run(run_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Forcefully execute a run by canceling all prior runs
 
     Prioritizes a specific run by canceling other queued runs to unlock the workspace,
@@ -421,4 +425,4 @@ async def force_execute_run(run_id: str) -> APIResponse:
         docs/tools/run.md for reference documentation
     """
     # Make API request
-    return await api_request(f"runs/{run_id}/actions/force-execute", method="POST")
+    return await api_request(f"runs/{run_id}/actions/force-execute", method="POST", ctx=ctx)

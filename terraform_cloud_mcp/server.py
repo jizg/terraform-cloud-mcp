@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 Terraform Cloud MCP Server
+
+This server uses FastMCP's native session state (3.0.0+) for automatic
+session isolation and distributed storage support.
 """
 
 import logging
@@ -24,13 +27,21 @@ from terraform_cloud_mcp.tools import state_versions
 from terraform_cloud_mcp.tools import state_version_outputs
 from terraform_cloud_mcp.tools import variables
 from terraform_cloud_mcp.tools import token
+from terraform_cloud_mcp.tools import sessions
 
 # Configure logging
 level = os.getenv("FASTMCP_LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=getattr(logging, level, logging.INFO))
 
+logger = logging.getLogger(__name__)
+
+
 # Create server instance
-mcp: FastMCP = FastMCP("Terraform Cloud MCP Server")
+# FastMCP 3.0.0+ includes native session state management via ctx.set_session_state()
+# For distributed deployments, session storage backends will be configured via
+# FastMCP's session storage mechanism (not yet exposed in public API)
+mcp = FastMCP("Terraform Cloud MCP Server")
+
 
 # Check if delete tools should be enabled
 enable_delete_tools = should_enable_delete_tools()
@@ -55,6 +66,12 @@ mcp.tool()(account.get_account_details)
 # Register token management tools
 mcp.tool()(token.set_token)
 mcp.tool()(token.get_current_token)
+
+# Register session management tools (now with enhanced context features)
+mcp.tool()(sessions.get_session_status)
+mcp.tool()(sessions.clear_session)
+mcp.tool()(sessions.set_context)
+mcp.tool()(sessions.get_context)
 
 # Register workspace management tools
 mcp.tool()(workspaces.list_workspaces)

@@ -7,10 +7,12 @@ Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/account
 from ..api.client import api_request
 from ..utils.decorators import handle_api_errors
 from ..models.base import APIResponse
+from fastmcp import Context
+from typing import Optional
 
 
 @handle_api_errors
-async def get_account_details() -> APIResponse:
+async def get_account_details(ctx: Optional[Context] = None) -> APIResponse:
     """Get account details for a Terraform Cloud API token
 
     This endpoint shows information about the currently authenticated user or service account,
@@ -27,4 +29,4 @@ async def get_account_details() -> APIResponse:
     See:
         docs/tools/account.md for reference documentation
     """
-    return await api_request("account/details")
+    return await api_request("account/details", ctx=ctx)

@@ -7,13 +7,15 @@ Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/cost-es
 """
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..models.base import APIResponse
 from ..models.cost_estimates import CostEstimateRequest
 from ..utils.decorators import handle_api_errors
+from typing import Optional
 
 
 @handle_api_errors
-async def get_cost_estimate_details(cost_estimate_id: str) -> APIResponse:
+async def get_cost_estimate_details(cost_estimate_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific cost estimate.
 
     Retrieves comprehensive information about a cost estimate including its current status,
@@ -39,4 +41,4 @@ async def get_cost_estimate_details(cost_estimate_id: str) -> APIResponse:
     params = CostEstimateRequest(cost_estimate_id=cost_estimate_id)
 
     # Make API request
-    return await api_request(f"cost-estimates/{params.cost_estimate_id}")
+    return await api_request(f"cost-estimates/{params.cost_estimate_id}", ctx=ctx)

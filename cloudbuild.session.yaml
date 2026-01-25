@@ -32,7 +32,7 @@ steps:
       - '--allow-unauthenticated'
       - '--cpu=1'
       - '--memory=512Mi'
-      - '--set-env-vars=MCP_TRANSPORT=streamable-http,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false,ENABLE_RAW_RESPONSE=false'
+      - '--set-env-vars=MCP_TRANSPORT=streamable-http,FASTMCP_LOG_LEVEL=INFO,TFC_ADDRESS=https://app.terraform.io,ENABLE_DELETE_TOOLS=true,READ_ONLY_TOOLS=false,ENABLE_RAW_RESPONSE=false'
 
 images:
   - 'asia-east1-docker.pkg.dev/$PROJECT_ID/terraform-cloud-mcp/tfc-mcp-session:$BUILD_ID'

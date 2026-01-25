@@ -7,13 +7,15 @@ Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/assessm
 """
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..models.base import APIResponse
 from ..models.assessment_results import AssessmentResultRequest, AssessmentOutputRequest
 from ..utils.decorators import handle_api_errors
+from typing import Optional
 
 
 @handle_api_errors
-async def get_assessment_result_details(assessment_result_id: str) -> APIResponse:
+async def get_assessment_result_details(assessment_result_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific assessment result.
 
     Retrieves comprehensive information about an assessment result including its current status,
@@ -34,11 +36,11 @@ async def get_assessment_result_details(assessment_result_id: str) -> APIRespons
     params = AssessmentResultRequest(assessment_result_id=assessment_result_id)
 
     # Make API request
-    return await api_request(f"assessment-results/{params.assessment_result_id}")
+    return await api_request(f"assessment-results/{params.assessment_result_id}", ctx=ctx)
 
 
 @handle_api_errors
-async def get_assessment_json_output(assessment_result_id: str) -> APIResponse:
+async def get_assessment_json_output(assessment_result_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Retrieve the JSON execution plan from an assessment result.
 
     Gets the JSON representation of the plan execution details from an assessment,
@@ -67,11 +69,12 @@ async def get_assessment_json_output(assessment_result_id: str) -> APIResponse:
     return await api_request(
         f"assessment-results/{params.assessment_result_id}/json-output",
         accept_text=True,
+        ctx=ctx,
     )
 
 
 @handle_api_errors
-async def get_assessment_json_schema(assessment_result_id: str) -> APIResponse:
+async def get_assessment_json_schema(assessment_result_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Retrieve the JSON schema file from an assessment result.
 
     Gets the JSON schema representation of the provider schema used during the assessment,
@@ -99,11 +102,12 @@ async def get_assessment_json_schema(assessment_result_id: str) -> APIResponse:
     return await api_request(
         f"assessment-results/{params.assessment_result_id}/json-schema",
         accept_text=True,
+        ctx=ctx,
     )
 
 
 @handle_api_errors
-async def get_assessment_log_output(assessment_result_id: str) -> APIResponse:
+async def get_assessment_log_output(assessment_result_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Retrieve logs from an assessment result.
 
     Gets the raw log output from a Terraform Cloud assessment operation,
@@ -130,5 +134,5 @@ async def get_assessment_log_output(assessment_result_id: str) -> APIResponse:
 
     # Make API request with text acceptance for the logs
     return await api_request(
-        f"assessment-results/{params.assessment_result_id}/log-output", accept_text=True
+        f"assessment-results/{params.assessment_result_id}/log-output", accept_text=True, ctx=ctx
     )

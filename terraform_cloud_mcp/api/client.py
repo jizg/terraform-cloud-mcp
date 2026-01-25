@@ -4,6 +4,7 @@ import logging
 from typing import Optional, Dict, TypeVar, Union, Any
 import httpx
 from pydantic import BaseModel
+from fastmcp import Context
 
 from ..utils.env import get_tfc_token, should_return_raw_response, get_tfc_address
 from ..utils.filters import (
@@ -29,6 +30,7 @@ async def api_request(
     external_url: bool = False,
     accept_text: bool = False,
     raw_response: Optional[bool] = None,
+    ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """Make a request to the Terraform Cloud API with proper error handling.
 
@@ -41,6 +43,7 @@ async def api_request(
         external_url: If True, use path as full URL instead of appending to base URL
         accept_text: If True, return response as text instead of JSON
         raw_response: Optional override for response filtering
+        ctx: Optional FastMCP Context object for session detection
 
     Returns:
         API response data dictionary, or error dictionary if request fails
@@ -51,7 +54,8 @@ async def api_request(
     # Use provided token, or get active token from session
     if token is None:
         from ..utils.env import get_active_token
-        token = await get_active_token()
+        token = await get_active_token(ctx=ctx)
+        logger.debug("[API Request] Retrieved token from session state")
 
     if not token:
         raise ValueError(

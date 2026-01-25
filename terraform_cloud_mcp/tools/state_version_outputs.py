@@ -7,6 +7,7 @@ Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/state-v
 """
 
 from ..api.client import api_request
+from fastmcp import Context
 from ..models.base import APIResponse
 from ..models.state_version_outputs import (
     StateVersionOutputListRequest,
@@ -14,11 +15,12 @@ from ..models.state_version_outputs import (
 )
 from ..utils.decorators import handle_api_errors
 from ..utils.request import query_params
+from typing import Optional
 
 
 @handle_api_errors
 async def list_state_version_outputs(
-    state_version_id: str, page_number: int = 1, page_size: int = 20
+    state_version_id: str, page_number: int = 1, page_size: int = 20, ctx: Optional[Context] = None
 ) -> APIResponse:
     """List outputs for a state version.
 
@@ -50,12 +52,12 @@ async def list_state_version_outputs(
 
     # Make API request
     return await api_request(
-        f"state-versions/{params.state_version_id}/outputs", params=query
+        f"state-versions/{params.state_version_id}/outputs", params=query, ctx=ctx
     )
 
 
 @handle_api_errors
-async def get_state_version_output(state_version_output_id: str) -> APIResponse:
+async def get_state_version_output(state_version_output_id: str, ctx: Optional[Context] = None) -> APIResponse:
     """Get details for a specific state version output.
 
     Retrieves comprehensive information about a state version output including
@@ -76,4 +78,4 @@ async def get_state_version_output(state_version_output_id: str) -> APIResponse:
     params = StateVersionOutputRequest(state_version_output_id=state_version_output_id)
 
     # Make API request
-    return await api_request(f"state-version-outputs/{params.state_version_output_id}")
+    return await api_request(f"state-version-outputs/{params.state_version_output_id}", ctx=ctx)
